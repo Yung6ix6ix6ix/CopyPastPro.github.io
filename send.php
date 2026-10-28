@@ -1,51 +1,58 @@
 <?php
-// Укажите ваш email, куда должны приходить заявки
-$to = "mnd12518@gmail.com"; 
-$subject = "Новая заявка с сайта (Заказ услуг)";
+// ====== НАСТРОЙКИ ======
+$to = 'mnd12518@gmail.com'; // СЮДА впишите вашу почту
+$from_email = 'https://yung6ix6ix6ix.github.io/CopyPastPro.github.io/'; // Почта/домен вашего сайта
+$from_name = 'Заявка с сайта';
+$subject = 'Новая заявка с сайта';
 
-// Настройка кодировки и заголовков
-$headers = "MIME-Version: 1.0\r\n";
-$headers .= "Content-Type: text/html; charset=UTF-8\r\n";
-$headers .= "From: Заявки с сайта <https://yung6ix6ix6ix.github.io/CopyPastPro.github.io/>\r\n";
+// ====== ЗАЩИТА И ДАННЫЕ ======
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header('Location: /');
+    exit;
+}
 
-// Проверка защиты Honeypot (если скрытое поле заполнено ботом — блокируем)
+// Антиспам: скрытое поле должно остаться пустым
 if (!empty($_POST['honeypot'])) {
-    die("Spam detected");
+    header('Location: /?status=spam');
+    exit;
 }
 
-// Проверяем, что форма была отправлена методом POST
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    
-    // Получаем и очищаем данные из формы
-    $name = isset($_POST['name']) ? htmlspecialchars(trim($_POST['name'])) : '';
-    $phone = isset($_POST['phone']) ? htmlspecialchars(trim($_POST['phone'])) : '';
-    $service = isset($_POST['service']) ? htmlspecialchars(trim($_POST['service'])) : '';
-    $comment = isset($_POST['comment']) ? htmlspecialchars(trim($_POST['comment'])) : '';
+function clean($value) {
+    return trim(strip_tags($value ?? ''));
+}
 
-    // Проверяем обязательные поля
-    if (!empty($name) && !empty($phone) && !empty($service)) {
-        
-        // Формируем красивое HTML-письмо
-        $message = "
-        <h2>Новая заявка на услугу</h2>
-        <p><strong>Имя:</strong> {$name}</p>
-        <p><strong>Телефон:</strong> {$phone}</p>
-        <p><strong>Выбранная услуга:</strong> {$service}</p>
-        <p><strong>Комментарий к заказу:</strong><br>" . nl2br($comment) . "</p>
-        ";
+$name = clean($_POST['name'] ?? '');
+$phone = clean($_POST['phone'] ?? '');
+$service = clean($_POST['service'] ?? '');
+$comment = clean($_POST['comment'] ?? '');
 
-        // Отправка письма
-        if (mail($to, $subject, $message, $headers)) {
-            // Перенаправление на страницу «Спасибо» или вывод сообщения
-            echo "<h3>Спасибо! Ваша заявка успешно отправлена.</h3>";
-            echo "<script>setTimeout(function(){ window.location.href = '/'; }, 3000);</script>";
-        } else {
-            echo "<h3>Ошибка отправки. Пожалуйста, попробуйте позже.</h3>";
-        }
-    } else {
-        echo "<h3>Пожалуйста, заполните все обязательные поля.</h3>";
-    }
+if ($name === '' || $phone === '' || $service === '') {
+    header('Location: /?status=error');
+    exit;
+}
+
+// ====== ПИСЬМО ======
+$message = "Новая заявка с сайта\n\n";
+$message .= "Имя: {$name}\n";
+$message .= "Телефон: {$phone}\n";
+$message .= "Услуга: {$service}\n";
+$message .= "Комментарий: " . ($comment !== '' ? $comment : '—') . "\n";
+$message .= "Дата: " . date('d.m.Y H:i') . "\n";
+
+$encoded_subject = '=?UTF-8?B?' . base64_encode($subject) . '?=';
+
+$headers = "From: =?UTF-8?B?" . base64_encode($from_name) . "?= <{$from_email}>\r\n";
+$headers .= "Reply-To: {$from_email}\r\n";
+$headers .= "MIME-Version: 1.0\r\n";
+$headers .= "Content-Type: text/plain; charset=UTF-8\r\n";
+$headers .= "Content-Transfer-Encoding: 8bit\r\n";
+
+$sent = mail($to, $encoded_subject, $message, $headers);
+
+// ====== ПЕРЕНАПРАВЛЕНИЕ ======
+if ($sent) {
+    header('Location: /?status=success#zayavka');
 } else {
-    echo "<h3>Доступ запрещен.</h3>";
+    header('Location: /?status=error#zayavka');
 }
-?>
+exit;

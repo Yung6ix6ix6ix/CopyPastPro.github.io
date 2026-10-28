@@ -6,7 +6,7 @@ $subject = "Новая заявка с сайта (Заказ услуг)";
 // Настройка кодировки и заголовков
 $headers = "MIME-Version: 1.0\r\n";
 $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
-$headers .= "From: Заявки с сайта <no-reply@yourdomain.com>\r\n";
+$headers .= "From: Заявки с сайта <https://yung6ix6ix6ix.github.io/CopyPastPro.github.io/>\r\n";
 
 // Проверка защиты Honeypot (если скрытое поле заполнено ботом — блокируем)
 if (!empty($_POST['honeypot'])) {
